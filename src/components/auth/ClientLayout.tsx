@@ -31,19 +31,20 @@ export default function ClientLayout(
     }, []);
 
     return (
-        <div className="flex flex-col min-h-screen bg-gray-50">
+        <div className="flex flex-col min-h-screen bg-green-50">
             {/* Top Navigation Bar */}
-            <nav className="sticky top-0 left-0 right-0 h-16 bg-white shadow-sm z-30 px-6 flex items-center justify-between">
+            <nav className="sticky top-0 left-0 right-0 h-16 bg-white shadow-sm z-30 px-6 flex items-center justify-between border-b border-green-200">
                 <div className="flex items-center">
                     <Link
                         href="/staff/courses"
-                        className="text-xl font-bold text-primary hover:opacity-80"
+                        className="text-xl font-bold text-green-700 hover:text-green-600 transition-colors"
                     >
                         Analyser
                     </Link>
 
                     {/* Main navigation links */}
-                    {/* {displayUser && (
+                    {
+                        /* {displayUser && (
                         <div className="hidden md:flex ml-10 space-x-8">
                             <Link
                                 href={displayUser.role === "STAFF"
@@ -86,13 +87,14 @@ export default function ClientLayout(
                                 </>
                             )}
                         </div>
-                    )} */}
+                    )} */
+                    }
                 </div>
 
                 <div className="flex items-center gap-4">
                     {displayUser && (
                         <>
-                            <div className="bg-primary text-white px-3 py-1 rounded-full text-sm font-medium">
+                            <div className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-sm">
                                 {displayUser.role}
                             </div>
                             {mounted && <LogoutButton />}
@@ -101,7 +103,7 @@ export default function ClientLayout(
                     {!displayUser && (
                         <Link
                             href="/login"
-                            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors shadow-sm"
                         >
                             Login
                         </Link>
@@ -110,9 +112,17 @@ export default function ClientLayout(
             </nav>
 
             {/* Main content */}
-            <main className="flex-grow">
+            <main className="flex-grow bg-gradient-to-b from-green-50 to-white">
                 {children}
             </main>
+
+            {/* Footer */}
+            <footer className="bg-green-800 text-green-100 py-3 text-center text-sm">
+                <p>
+                    © {new Date().getFullYear()}{" "}
+                    Analyser - An educational assessment platform
+                </p>
+            </footer>
         </div>
     );
 }

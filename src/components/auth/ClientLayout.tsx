@@ -36,14 +36,14 @@ export default function ClientLayout(
             <nav className="sticky top-0 left-0 right-0 h-16 bg-white shadow-sm z-30 px-6 flex items-center justify-between">
                 <div className="flex items-center">
                     <Link
-                        href="/"
+                        href="/staff/courses"
                         className="text-xl font-bold text-primary hover:opacity-80"
                     >
-                        Demo-Evalify
+                        Analyser
                     </Link>
 
                     {/* Main navigation links */}
-                    {displayUser && (
+                    {/* {displayUser && (
                         <div className="hidden md:flex ml-10 space-x-8">
                             <Link
                                 href={displayUser.role === "STAFF"
@@ -86,7 +86,7 @@ export default function ClientLayout(
                                 </>
                             )}
                         </div>
-                    )}
+                    )} */}
                 </div>
 
                 <div className="flex items-center gap-4">

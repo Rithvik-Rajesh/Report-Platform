@@ -93,7 +93,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
             // Navigate based on role
             if (data.user.role === "STAFF") {
-                router.push("/staff/dashboard");
+                router.push("/staff/courses");
             } else if (data.user.role === "STUDENT") {
                 router.push("/student/dashboard");
             } else {

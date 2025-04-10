@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getSessionFromCookies } from "@/lib/auth";
-import { redis } from "@/lib/redis";
+import { generateCacheKey, getCachedData, invalidateCache } from "@/lib/cache";
 
 export async function GET(request: Request) {
     try {
@@ -24,52 +24,50 @@ export async function GET(request: Request) {
             });
         }
 
-        const cachedCourses = await redis.get(`courses:${session.userId}`);
-        if (cachedCourses) {
-            console.log("GET /api/courses - Cache hit");
-            return NextResponse.json(JSON.parse(cachedCourses));
-        }
-        console.log("GET /api/courses - Cache miss");
-
-        const users = await db.query("SELECT * FROM users WHERE id = $1", [
-            session.userId,
+        // Generate cache key for this specific user's courses
+        const cacheKey = generateCacheKey([
+            "courses",
+            `user:${session.userId}`,
         ]);
-        const user = users[0];
-        console.log("GET /api/courses - User:", user);
 
-        if (!user || user.role !== "STAFF") {
-            console.log("GET /api/courses - User not found or not staff");
+        const courses = await getCachedData(cacheKey, async () => {
+            const users = await db.query("SELECT * FROM users WHERE id = $1", [
+                session.userId,
+            ]);
+            const user = users[0];
+            console.log("GET /api/courses - User:", user);
+
+            if (!user || user.role !== "STAFF") {
+                console.log("GET /api/courses - User not found or not staff");
+                return null;
+            }
+
+            // Get all courses with student count
+            return await db.query(
+                `SELECT 
+                    c.id,
+                    c.name,
+                    c.code,
+                    c.description,
+                    c.created_at,
+                    COUNT(cs.student_id) as student_count
+                FROM courses c
+                LEFT JOIN course_staff cf ON c.id = cf.course_id
+                LEFT JOIN course_student cs ON c.id = cs.course_id
+                WHERE cf.staff_id = $1
+                GROUP BY c.id, c.name, c.code, c.description, c.created_at
+                ORDER BY c.created_at DESC`,
+                [user.id],
+            );
+        }, 3600); // 1 hour cache
+
+        if (!courses) {
             return NextResponse.json({ error: "Unauthorized" }, {
                 status: 401,
             });
         }
 
-        // Get all courses with student count
-        const courses = await db.query(
-            `SELECT 
-                c.id,
-                c.name,
-                c.code,
-                c.description,
-                c.created_at,
-                COUNT(cs.student_id) as student_count
-            FROM courses c
-            LEFT JOIN course_staff cf ON c.id = cf.course_id
-            LEFT JOIN course_student cs ON c.id = cs.course_id
-            WHERE cf.staff_id = $1
-            GROUP BY c.id, c.name, c.code, c.description, c.created_at
-            ORDER BY c.created_at DESC`,
-            [user.id],
-        );
-
         console.log("GET /api/courses - Courses found:", courses);
-
-        await redis.setex(
-            `courses:${session.userId}`,
-            6000,
-            JSON.stringify(courses),
-        );
-
         return NextResponse.json(courses);
     } catch (error) {
         console.error("GET /api/courses - Error:", error);
@@ -137,7 +135,10 @@ export async function POST(request: Request) {
             [course.id, staff[0].id, "OWNER"],
         );
 
-        await redis.del(`courses:${session.userId}`);
+        // Invalidate all courses cache for this user
+        await invalidateCache(
+            generateCacheKey(["courses", `user:${session.userId}`]),
+        );
 
         return NextResponse.json(course);
     } catch (error) {
@@ -229,7 +230,11 @@ export async function PUT(request: NextRequest) {
             [courseId],
         );
 
-        await redis.del(`courses:${session.userId}`);
+        // Invalidate cache for courses and specific course
+        await invalidateCache(
+            generateCacheKey(["courses", `user:${session.userId}`]),
+        );
+        await invalidateCache(`course:${courseId}:*`);
 
         return NextResponse.json({
             ...updatedCourse,
@@ -291,8 +296,11 @@ export async function DELETE(request: NextRequest) {
             // Commit the transaction
             await db.query("COMMIT");
 
-            // Clear the cache
-            await redis.del(`courses:${session.userId}`);
+            // Invalidate all related cache keys
+            await invalidateCache(
+                generateCacheKey(["courses", `user:${session.userId}`]),
+            );
+            await invalidateCache(`course:${id}:*`);
 
             return NextResponse.json(
                 { message: "Course deleted successfully" },

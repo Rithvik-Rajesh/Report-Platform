@@ -1,6 +1,7 @@
 import db from "./db";
 import { Session, SessionPayload, User } from "./types";
 import { generateSessionId, parseCookies, verifyPassword } from "./utils";
+import { generateCacheKey, getCachedData } from "./cache";
 
 // Session cookie name
 const SESSION_COOKIE_NAME = "quiz_session";
@@ -27,46 +28,53 @@ export async function createSession(user: User): Promise<string> {
 
 // Get session by id
 export async function getSession(sessionId: string): Promise<Session | null> {
-  try {
-    const result = await db.query(
-      "SELECT s.id, s.user_id, s.expires, u.id as user_id, u.name, u.email, u.roll_no, u.role FROM sessions s " +
-        "JOIN users u ON s.user_id = u.id " +
-        "WHERE s.id = $1 AND s.expires > NOW()",
-      [sessionId],
-    );
+  // Generate cache key for session
+  const cacheKey = generateCacheKey(["session", sessionId]);
 
-    if (result.length === 0) return null;
+  return await getCachedData(cacheKey, async () => {
+    try {
+      const result = await db.query(
+        "SELECT s.id, s.user_id, s.expires, u.id as user_id, u.name, u.email, u.roll_no, u.role FROM sessions s " +
+          "JOIN users u ON s.user_id = u.id " +
+          "WHERE s.id = $1 AND s.expires > NOW()",
+        [sessionId],
+      );
 
-    const sessionData = result[0];
-    const user: User = {
-      id: sessionData.user_id,
-      name: sessionData.name,
-      email: sessionData.email,
-      roll_no: sessionData.roll_no,
-      role: sessionData.role,
-      password: sessionData.password,
-      created_at: sessionData.created_at,
-      updated_at: sessionData.updated_at,
-    };
+      if (result.length === 0) return null;
 
-    const session: Session = {
-      id: sessionData.id,
-      userId: sessionData.user_id,
-      expires: sessionData.expires,
-      user,
-    };
+      const sessionData = result[0];
+      const user: User = {
+        id: sessionData.user_id,
+        name: sessionData.name,
+        email: sessionData.email,
+        roll_no: sessionData.roll_no,
+        role: sessionData.role,
+        password: sessionData.password,
+        created_at: sessionData.created_at,
+        updated_at: sessionData.updated_at,
+      };
 
-    return session;
-  } catch (error) {
-    console.error("Error getting session:", error);
-    return null;
-  }
+      const session: Session = {
+        id: sessionData.id,
+        userId: sessionData.user_id,
+        expires: sessionData.expires,
+        user,
+      };
+
+      return session;
+    } catch (error) {
+      console.error("Error getting session:", error);
+      return null;
+    }
+  }, 1800); // 30 minutes TTL
 }
 
 // Delete a session
 export async function deleteSession(sessionId: string): Promise<boolean> {
   try {
     await db.query("DELETE FROM sessions WHERE id = $1", [sessionId]);
+    // Invalidate session cache
+    await redis.del(generateCacheKey(["session", sessionId]));
     return true;
   } catch (error) {
     console.error("Error deleting session:", error);

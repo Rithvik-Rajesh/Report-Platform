@@ -18,12 +18,7 @@ export async function middleware(request: NextRequest) {
 
     // Allow access to public paths
     if (
-        publicPaths.includes(pathname) ||
-        pathname.startsWith("/api/") ||
-        pathname.startsWith("/_next/") ||
-        pathname.startsWith("/static/") ||
-        pathname === "/favicon.ico" ||
-        pathname === "/robots.txt"
+        publicPaths.includes(pathname) 
     ) {
         return NextResponse.next();
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -98,7 +98,7 @@ export default function QuizPage() {
         topic: "",
         type: "",
     });
-
+    const router = useRouter();
     const TOTAL_MARKS = 10;
 
     const quizInfo = {
@@ -483,6 +483,9 @@ export default function QuizPage() {
                                     <Button
                                         variant="outline"
                                         className="border-green-600 text-green-600 hover:bg-green-50 rounded-full shadow-sm transition duration-200 ease-in-out"
+                                        onClick={() => {
+                                            router.push(`/staff/courses/${params.courseId}/quiz/${params.quizId}/result`);
+                                        }}
                                     >
                                         <BarChart3 className="mr-2 h-4 w-4" />
                                         {" "}

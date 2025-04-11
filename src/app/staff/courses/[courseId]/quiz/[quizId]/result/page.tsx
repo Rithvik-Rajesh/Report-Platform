@@ -23,6 +23,7 @@ import {
     FileBarChart,
     Search,
     Users,
+    AlertTriangle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -286,35 +287,9 @@ export default function QuizResultsPage(
             if (questionChartDom) {
                 const questionChart = echarts.init(questionChartDom);
 
-                // Use real data if available, otherwise use mock data
-                // const questions = quizResults.questionPerformance.map(q => q.question.substring(0, 5));
-                // const correctAnswers = quizResults.questionPerformance.map(q => q.correctAnswers);
-
-                // Using mock data for demo as requested
-                const questions = [
-                    "Q1",
-                    "Q2",
-                    "Q3",
-                    "Q4",
-                    "Q5",
-                    "Q6",
-                    "Q7",
-                    "Q8",
-                    "Q9",
-                    "Q10",
-                ];
-                const correctAnswers = [
-                    98,
-                    87,
-                    110,
-                    76,
-                    92,
-                    105,
-                    88,
-                    94,
-                    82,
-                    101,
-                ];
+                // Use real data from API
+                const questions = quizResults.questionPerformance.slice(0, 10).map(q => `Q${q.id}`);
+                const correctAnswers = quizResults.questionPerformance.slice(0, 10).map(q => q.correctAnswers);
 
                 const questionOption = {
                     animation: true,
@@ -411,15 +386,9 @@ export default function QuizResultsPage(
             if (topicChartDom) {
                 const topicChart = echarts.init(topicChartDom);
 
-                // Using mock data for demo as requested
-                const topics = [
-                    "SQL",
-                    "Normalization",
-                    "Transactions",
-                    "Indexing",
-                    "NoSQL",
-                ];
-                const topicScores = [82, 75, 68, 88, 70];
+                // Use real data from API
+                const topics = quizResults.topicPerformance.map(t => t.topic);
+                const topicScores = quizResults.topicPerformance.map(t => t.avgScore);
 
                 const topicOption = {
                     animation: true,
@@ -478,7 +447,7 @@ export default function QuizResultsPage(
                             type: "bar",
                             data: topicScores,
                             itemStyle: {
-                                color: function (params) {
+                                color: function (params: any) {
                                     const colorList = [
                                         "#16a34a", // Green-600
                                         "#15803d", // Green-700
@@ -509,15 +478,9 @@ export default function QuizResultsPage(
             if (typeChartDom) {
                 const typeChart = echarts.init(typeChartDom);
 
-                // Using mock data for demo as requested
-                const types = [
-                    "Multiple Choice",
-                    "True/False",
-                    "Short Answer",
-                    "Code Writing",
-                    "Case Study",
-                ];
-                const typeScores = [85, 92, 76, 68, 72];
+                // Use real data from API
+                const types = quizResults.typePerformance.map(t => t.type);
+                const typeScores = quizResults.typePerformance.map(t => t.avgScore);
 
                 const typeOption = {
                     animation: true,
@@ -550,7 +513,7 @@ export default function QuizResultsPage(
                             },
                             label: {
                                 show: true,
-                                formatter: "{b}: {c} ({d}%)",
+                                formatter: "{b}: {c}%",
                             },
                             emphasis: {
                                 label: {
@@ -847,11 +810,10 @@ export default function QuizResultsPage(
                                         ) => (
                                             <TableRow
                                                 key={student.rollNo}
-                                                className={`${
-                                                    index % 2 === 0
-                                                        ? "bg-white"
-                                                        : "bg-green-50/30"
-                                                } h-14 hover:bg-green-50 transition-colors`}
+                                                className={`${index % 2 === 0
+                                                    ? "bg-white"
+                                                    : "bg-green-50/30"
+                                                    } h-14 hover:bg-green-50 transition-colors`}
                                             >
                                                 <TableCell className="font-medium">
                                                     {student.rollNo}
@@ -861,11 +823,10 @@ export default function QuizResultsPage(
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <span
-                                                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                                            getGradeColor(
-                                                                student.marks,
-                                                            )
-                                                        }`}
+                                                        className={`px-3 py-1 rounded-full text-sm font-medium ${getGradeColor(
+                                                            student.marks,
+                                                        )
+                                                            }`}
                                                     >
                                                         {student.marks}
                                                     </span>
@@ -907,13 +868,13 @@ export default function QuizResultsPage(
                                             <Button
                                                 key={pageNumber}
                                                 variant={currentPage ===
-                                                        pageNumber
+                                                    pageNumber
                                                     ? "default"
                                                     : "outline"}
                                                 onClick={() =>
                                                     setCurrentPage(pageNumber)}
                                                 className={currentPage ===
-                                                        pageNumber
+                                                    pageNumber
                                                     ? "bg-green-600 hover:bg-green-700"
                                                     : "border-green-200 text-green-700 hover:bg-green-50"}
                                             >

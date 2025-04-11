@@ -53,9 +53,7 @@ class Database {
 
   // Database initialization script
   private async init() {
-    // Create enums with proper error handling
     try {
-      // For creating enums, we need to check if they exist first
       const roleEnum = `
       DO $$ 
       BEGIN 

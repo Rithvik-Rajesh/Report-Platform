@@ -60,8 +60,8 @@ interface Performance {
     evaluatedAt: string;
 }
 
-interface TopicData {
-    topic: string;
+interface typeData {
+    type: string;
     statistics: {
         totalQuestions: number;
         overallPerformance: {
@@ -75,8 +75,8 @@ interface TopicData {
 }
 
 // Dummy data for when API fails
-const dummyTopicData: TopicData = {
-    topic: "Algorithm Analysis",
+const dummytypeData: typeData = {
+    type: "Algorithm Analysis",
     statistics: {
         totalQuestions: 10,
         overallPerformance: {
@@ -227,24 +227,24 @@ const CustomProgress = ({ value, className }: { value: number; className?: strin
 };
 
 export default function AlgorithmAnalysisPage({
-    params = { courseId: "101", topicId: "1" },
+    params = { courseId: "101", typeId: "1" },
 }: {
-    params?: { courseId: string; topicId: string };
+    params?: { courseId: string; typeId: string };
 }) {
-    const { courseId, topicId } = params;
-    const [topicData, setTopicData] = useState<TopicData | null>(null);
+    const { courseId, typeId } = params;
+    const [typeData, settypeData] = useState<typeData | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const chartRef = useRef<HTMLDivElement>(null);
 
     const router = useRouter();
     useEffect(() => {
-        const fetchTopicData = async () => {
+        const fetchtypeData = async () => {
             try {
-                console.log("Page - Fetching topic data for:", courseId, topicId);
+                console.log("Page - Fetching type data for:", courseId, typeId);
                 // Try to fetch data from API
                 const response = await fetch(
-                    `/api/courses/${courseId}/topics/${topicId}`,
+                    `/api/courses/${courseId}/types/${typeId}`,
                 );
 
                 if (!response.ok) {
@@ -252,39 +252,39 @@ export default function AlgorithmAnalysisPage({
                 }
 
                 const data = await response.json();
-                console.log("Page - Received topic data:", data);
-                setTopicData(data);
+                console.log("Page - Received type data:", data);
+                settypeData(data);
             } catch (err) {
                 // If any error occurs, use dummy data
                 console.error(
                     "Page - Error fetching data, using dummy data instead:",
                     err,
                 );
-                setTopicData(dummyTopicData);
+                settypeData(dummytypeData);
                 setError(
                     err instanceof Error
                         ? err.message
-                        : "Failed to fetch topic data",
+                        : "Failed to fetch type data",
                 );
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchTopicData();
-    }, [courseId, topicId]);
+        fetchtypeData();
+    }, [courseId, typeId]);
 
     useEffect(() => {
-        if (chartRef.current && topicData) {
-            console.log("Page - Building chart with topic data:", topicData.performance);
+        if (chartRef.current && typeData) {
+            console.log("Page - Building chart with type data:", typeData.performance);
             try {
                 const chart = echarts.init(chartRef.current);
 
-                // Use actual topic data
-                const quizTitles = topicData.performance.map(p => p.quizTitle);
-                const avgScores = topicData.performance.map(p => p.averageScore);
-                const lowestScores = topicData.performance.map(p => p.minScore);
-                const highestScores = topicData.performance.map(p => p.maxScore);
+                // Use actual type data
+                const quizTitles = typeData.performance.map(p => p.quizTitle);
+                const avgScores = typeData.performance.map(p => p.averageScore);
+                const lowestScores = typeData.performance.map(p => p.minScore);
+                const highestScores = typeData.performance.map(p => p.maxScore);
 
                 console.log("Page - Chart data:", {
                     quizTitles, avgScores, lowestScores, highestScores
@@ -449,7 +449,7 @@ export default function AlgorithmAnalysisPage({
                 console.error("Page - Error rendering chart:", err);
             }
         }
-    }, [topicData]);
+    }, [typeData]);
 
     if (loading) {
         return (
@@ -458,14 +458,14 @@ export default function AlgorithmAnalysisPage({
                     <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500">
                     </div>
                     <div className="text-xl text-gray-600">
-                        Loading topic data...
+                        Loading type data...
                     </div>
                 </div>
             </div>
         );
     }
 
-    if (error && !topicData) {
+    if (error && !typeData) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="bg-red-50 p-6 rounded-lg shadow-md max-w-md">
@@ -499,26 +499,26 @@ export default function AlgorithmAnalysisPage({
         );
     }
 
-    if (!topicData) {
+    if (!typeData) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-xl text-gray-600">
-                    No topic data available
+                    No type data available
                 </div>
             </div>
         );
     }
 
-    const handleViewTopic = () => {
-        router.push(`/staff/courses/${courseId}/topics`);
+    const handleViewtype = () => {
+        router.push(`/staff/courses/${courseId}/types`);
     };
 
     // Calculate average accuracy across all questions
-    const averageAccuracy = topicData.questions.length > 0
-        ? topicData.questions.reduce(
+    const averageAccuracy = typeData.questions.length > 0
+        ? typeData.questions.reduce(
             (sum, q) => sum + q.statistics.accuracy,
             0,
-        ) / topicData.questions.length
+        ) / typeData.questions.length
         : 0;
 
     // Only changing the return UI part
@@ -530,19 +530,19 @@ export default function AlgorithmAnalysisPage({
                     <div>
                         <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
                             <BookOpen className="h-8 w-8 text-green-600" />
-                            {topicData.topic}
+                            {typeData.type}
                         </h1>
                         <p className="text-green-600 font-medium">
-                            Topic {topicId} | Course Code: {courseId}
+                            type {typeId} | Course Code: {courseId}
                         </p>
                     </div>
-                    <Link href={`/staff/courses/${courseId}/topics`}>
+                    <Link href={`/staff/courses/${courseId}/types`}>
                         <Button
                             variant="default"
                             className="bg-green-600 hover:bg-green-700 text-white rounded-full shadow-sm transition-all"
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
-                            Back to Topics
+                            Back to types
                         </Button>
                     </Link>
                 </div>
@@ -571,7 +571,7 @@ export default function AlgorithmAnalysisPage({
                             </h2>
                             <div className="ml-4 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium flex items-center">
                                 <FileQuestion className="h-4 w-4 mr-1" />
-                                {topicData.questions.length} Total
+                                {typeData.questions.length} Total
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -586,7 +586,7 @@ export default function AlgorithmAnalysisPage({
                     </div>
 
                     <div className="grid grid-cols-1 gap-6">
-                        {topicData.questions.map((question) => (
+                        {typeData.questions.map((question) => (
                             <Card
                                 key={question.id}
                                 className="overflow-hidden bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300"

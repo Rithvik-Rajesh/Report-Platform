@@ -22,7 +22,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 
-interface Topic {
+interface type {
   id: number;
   title: string;
   totalQuestions: number;
@@ -39,9 +39,9 @@ interface CourseData {
   };
   statistics: {
     overallAccuracy: number;
-    totalTopics: number;
+    totaltypes: number;
   };
-  topics: Topic[];
+  types: type[];
 }
 
 // Dummy data for when API fails
@@ -51,13 +51,13 @@ const dummyCourseData: CourseData = {
     name: "Advanced Data Structures & Algorithms",
     code: "CS-401",
     description:
-      "This course covers advanced topics in data structures and algorithms.",
+      "This course covers advanced types in data structures and algorithms.",
   },
   statistics: {
     overallAccuracy: 74.15,
-    totalTopics: 5,
+    totaltypes: 5,
   },
-  topics: [
+  types: [
     {
       id: 1,
       title: "Introduction to Algorithm Analysis",
@@ -96,7 +96,7 @@ const dummyCourseData: CourseData = {
   ],
 };
 
-export default function TopicsPage(
+export default function typesPage(
   { params }: { params: { courseId: string } },
 ) {
   const courseId = params.courseId;
@@ -109,15 +109,15 @@ export default function TopicsPage(
   useEffect(() => {
     const fetchCourseData = async () => {
       try {
-        console.log("Page - Fetching topics data for course:", courseId);
-        const response = await fetch(`/api/courses/${courseId}/topics`);
+        console.log("Page - Fetching types data for course:", courseId);
+        const response = await fetch(`/api/courses/${courseId}/types`);
 
         if (!response.ok) {
           throw new Error(`Error: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log("Page - Received topics data:", data);
+        console.log("Page - Received types data:", data);
         setCourseData(data);
       } catch (err) {
         console.error("Page - Error fetching data, using dummy data instead:", err);
@@ -139,10 +139,10 @@ export default function TopicsPage(
       const chart = echarts.init(chartRef.current);
 
       // If we wanted to use actual fetched data instead, we would use this:
-      const topicNames = courseData.topics.map((topic) => topic.title.split(' ').slice(0, 2).join(' '));
-      const accuracies = courseData.topics.map((topic) => topic.accuracy);
+      const typeNames = courseData.types.map((type) => type.title.split(' ').slice(0, 2).join(' '));
+      const accuracies = courseData.types.map((type) => type.accuracy);
 
-      console.log("Page - Chart data:", { topicNames, accuracies });
+      console.log("Page - Chart data:", { typeNames, accuracies });
 
       const option = {
         grid: {
@@ -154,7 +154,7 @@ export default function TopicsPage(
         },
         xAxis: {
           type: "category",
-          data: topicNames,
+          data: typeNames,
           axisLine: {
             lineStyle: {
               color: "#e2e8f0",
@@ -218,8 +218,8 @@ export default function TopicsPage(
     }
   }, [courseData]);
 
-  const handleViewTopic = (topicId: number) => {
-    router.push(`/staff/courses/${courseId}/topics/${topicId}`);
+  const handleViewtype = (typeId: number) => {
+    router.push(`/staff/courses/${courseId}/types/${typeId}`);
   };
 
   if (loading) {
@@ -298,7 +298,7 @@ export default function TopicsPage(
                           </Badge>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Average accuracy across all topics</p>
+                          <p>Average accuracy across all types</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -312,14 +312,14 @@ export default function TopicsPage(
                 <div className="space-y-4">
                   <div className="text-gray-600 flex items-center">
                     <BookOpen className="h-4 w-4 mr-1 text-green-600" />
-                    Topics Overview
+                    types Overview
                   </div>
                   <div className="flex justify-center">
                     <div className="w-24 h-24 rounded-full bg-green-100 flex flex-col items-center justify-center border-4 border-green-200">
                       <span className="text-3xl font-semibold text-green-700">
-                        {courseData.statistics.totalTopics}
+                        {courseData.statistics.totaltypes}
                       </span>
-                      <span className="text-xs text-green-600">Topics</span>
+                      <span className="text-xs text-green-600">types</span>
                     </div>
                   </div>
                 </div>
@@ -330,23 +330,23 @@ export default function TopicsPage(
           <div className="mt-12 mb-8">
             <div className="flex items-center gap-2 mb-8">
               <BookOpen className="h-6 w-6 text-green-600" />
-              <h2 className="text-2xl font-bold text-gray-800">TOPICS</h2>
+              <h2 className="text-2xl font-bold text-gray-800">typeS</h2>
               <Badge className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm ml-2">
-                {courseData.topics.length} Total
+                {courseData.types.length} Total
               </Badge>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {/* Topic Cards */}
-              {courseData.topics.map((topic) => (
+              {/* type Cards */}
+              {courseData.types.map((type) => (
                 <div
-                  key={topic.id}
+                  key={type.id}
                   className="border border-green-100 rounded-xl shadow-sm overflow-hidden bg-white hover:shadow-md transition-shadow duration-300"
                 >
                   <div className="border-b border-green-100 bg-green-50 p-4">
                     <h3 className="text-lg font-semibold text-gray-800 flex items-start">
                       <BookOpen className="h-5 w-5 mr-2 text-green-600 flex-shrink-0 mt-1" />
-                      <span className="line-clamp-2">{topic.title}</span>
+                      <span className="line-clamp-2">{type.title}</span>
                     </h3>
                   </div>
 
@@ -354,12 +354,12 @@ export default function TopicsPage(
                     <div className="flex items-center gap-4 text-sm text-gray-500 mb-5">
                       <div className="flex items-center">
                         <FileQuestion className="w-4 h-4 mr-1 text-green-600" />
-                        <span>{topic.totalQuestions} questions</span>
+                        <span>{type.totalQuestions} questions</span>
                       </div>
 
                       <div className="ml-auto flex items-center">
                         <Calendar className="w-4 h-4 mr-1 text-green-600" />
-                        <span>{topic.lastAccessed}</span>
+                        <span>{type.lastAccessed}</span>
                       </div>
                     </div>
 
@@ -373,19 +373,19 @@ export default function TopicsPage(
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span>{topic.accuracy.toFixed(2)}%</span>
+                                <span>{type.accuracy.toFixed(2)}%</span>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Average accuracy for this topic</p>
+                                <p>Average accuracy for this type</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </div>
                         <Progress
-                          value={topic.accuracy}
-                          className={`h-2 bg-gray-100 ${topic.accuracy >= 80
+                          value={type.accuracy}
+                          className={`h-2 bg-gray-100 ${type.accuracy >= 80
                             ? "bg-green-500"
-                            : topic.accuracy >= 70
+                            : type.accuracy >= 70
                               ? "bg-blue-600"
                               : "bg-amber-500"
                             }`}
@@ -394,10 +394,10 @@ export default function TopicsPage(
                     </div>
 
                     <button
-                      onClick={() => handleViewTopic(topic.id)}
+                      onClick={() => handleViewtype(type.id)}
                       className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
                     >
-                      View Topic
+                      View type
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>

@@ -11,7 +11,8 @@ export async function GET(
   }
 ) {
   try {
-    const { courseid } = await params;
+    const { courseid } = params;
+    console.log("API - Course ID for topics:", courseid);
 
     if (!courseid) {
       return NextResponse.json(
@@ -20,7 +21,10 @@ export async function GET(
       );
     }
 
-    const session = await getSessionFromCookies();
+    // Get the session cookie from the request headers
+    const cookieHeader = request.headers.get("cookie") || undefined;
+    const session = await getSessionFromCookies(cookieHeader);
+    console.log("API Topics - Session data:", JSON.stringify(session));
 
     if (!session || !session.user) {
       return NextResponse.json(
@@ -29,32 +33,14 @@ export async function GET(
       );
     }
 
-    // Get all topics for this course
-    const topics = await db.query(
-      `SELECT 
-        ct.id, 
-        ct.topic,
-        COALESCE(
-          (SELECT COUNT(*) FROM questions q 
-           JOIN question_topic qt ON q.id = qt.question_id 
-           WHERE qt.topic_id = ct.id), 0
-        ) as total_questions,
-        to_char(MAX(qa.created_at), 'Mon DD, YYYY') as last_accessed
-      FROM course_topics ct
-      LEFT JOIN question_topic qt ON ct.id = qt.topic_id
-      LEFT JOIN quiz_attempts qa ON qa.topic_id = ct.id
-      WHERE ct.course_id = $1
-      GROUP BY ct.id, ct.topic`,
-      [courseid]
-    );
-
     // Get course information
     const courseInfo = await db.query(
-      `SELECT name, code, description 
+      `SELECT id, name, code, description 
        FROM courses 
        WHERE id = $1`,
       [courseid]
     );
+    console.log("API Topics - Course info:", JSON.stringify(courseInfo));
 
     if (courseInfo.length === 0) {
       return NextResponse.json(
@@ -63,47 +49,66 @@ export async function GET(
       );
     }
 
-    // Get stats for each topic
+    // Get all topics for this course
+    const topics = await db.query(
+      `SELECT 
+        ct.id, 
+        ct.topic,
+        (SELECT COUNT(*) FROM questions q 
+         JOIN question_topic qt ON q.id = qt.question_id 
+         WHERE qt.topic_id = ct.id) as total_questions
+      FROM course_topics ct
+      WHERE ct.course_id = $1
+      GROUP BY ct.id, ct.topic`,
+      [courseid]
+    );
+    console.log("API Topics - Raw topics:", JSON.stringify(topics));
+
+    // For each topic, calculate performance metrics
     const topicsWithStats = await Promise.all(
       topics.map(async (topic) => {
-        const stats = await db.query(
+        // Get class topic performance data
+        const performance = await db.query(
           `SELECT 
-            COALESCE(AVG(
-              CASE WHEN qa.is_correct = true THEN 100.0 ELSE 0.0 END
-            ), 0) as accuracy,
-            COALESCE(
-              COUNT(DISTINCT qa.question_id) * 100.0 / 
-              NULLIF((SELECT COUNT(*) FROM questions q 
-                     JOIN question_topic qt ON q.id = qt.question_id 
-                     WHERE qt.topic_id = $1), 0),
-              0
-            ) as completion_rate
-          FROM quiz_attempts qa
-          WHERE qa.topic_id = $1`,
-          [topic.id]
+            AVG(avg_accuracy) as accuracy,
+            MAX(evaluated_at) as last_evaluated
+          FROM class_topic_performance
+          WHERE topic_id = $1 AND course_id = $2
+          GROUP BY topic_id`,
+          [topic.id, courseid]
         );
+
+        // Format last evaluated date
+        const lastAccessed = performance.length > 0 && performance[0].last_evaluated
+          ? new Date(performance[0].last_evaluated).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          })
+          : "Not accessed yet";
+
+        // Calculate accuracy - ensure we multiply by 100 for percentage display and convert to integer
+        const accuracyValue = performance.length > 0 && performance[0].accuracy
+          ? Math.round(parseFloat(performance[0].accuracy) * 100)
+          : 0;
 
         return {
           id: topic.id,
           title: topic.topic,
-          totalQuestions: parseInt(topic.total_questions),
-          accuracy: parseFloat(stats[0].accuracy || 0),
-          completionRate: parseFloat(stats[0].completion_rate || 0),
-          lastAccessed: topic.last_accessed || "Not accessed yet",
+          totalQuestions: parseInt(topic.total_questions || '0'),
+          accuracy: accuracyValue,
+          lastAccessed
         };
       })
     );
+    console.log("API Topics - Processed topics:", JSON.stringify(topicsWithStats));
 
-    // Calculate overall course stats
+    // Calculate overall statistics - individual topic accuracies are already in percentage (0-100)
     const overallAccuracy = topicsWithStats.length > 0
-      ? topicsWithStats.reduce((sum, topic) => sum + topic.accuracy, 0) / topicsWithStats.length
+      ? Math.round(topicsWithStats.reduce((sum, topic) => sum + topic.accuracy, 0) / topicsWithStats.length)
       : 0;
 
-    const overallCompletion = topicsWithStats.length > 0
-      ? topicsWithStats.reduce((sum, topic) => sum + topic.completionRate, 0) / topicsWithStats.length
-      : 0;
-
-    return NextResponse.json({
+    const result = {
       course: {
         id: courseid,
         name: courseInfo[0].name,
@@ -112,11 +117,13 @@ export async function GET(
       },
       statistics: {
         overallAccuracy,
-        overallCompletion,
         totalTopics: topicsWithStats.length
       },
       topics: topicsWithStats
-    });
+    };
+
+    console.log("API Topics - Final response structure:", JSON.stringify(result));
+    return NextResponse.json(result);
 
   } catch (error) {
     console.error("Error fetching topics data:", error);

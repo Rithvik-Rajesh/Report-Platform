@@ -8,11 +8,13 @@ export async function GET(
   { params }: { params: { courseid: string } },
 ) {
   try {
-    const cookieHeader = request.headers.get("cookie");
+    const cookieHeader = request.headers.get("cookie") || undefined;
     const session = await getSessionFromCookies(cookieHeader);
+    console.log("API - Session data:", JSON.stringify(session));
 
     const awaitedParams = await params;
     const { courseid } = awaitedParams;
+    console.log("API - Course ID:", courseid);
 
     if (!courseid) {
       return NextResponse.json({ error: "Course ID is required" }, {
@@ -21,8 +23,8 @@ export async function GET(
     }
 
     // Generate cache key - different keys for different user roles
-    const userRole = session?.user?.role || "anonymous";
-    const userId = session?.user?.id || "guest";
+    const userRole = session?.user?.role || session?.role || "anonymous";
+    const userId = session?.user?.id || session?.userId || "guest";
     const cacheKey = generateCacheKey([
       "course",
       courseid,
@@ -34,41 +36,68 @@ export async function GET(
       const course = await db.query("SELECT * FROM courses WHERE id = $1", [
         courseid,
       ]);
+      console.log("API - Course data:", JSON.stringify(course));
 
       if (course.length === 0) {
         return null;
       }
 
-      // Get quiz statistics
+      // Get quiz statistics correctly - calculate quiz total marks
       const quizStats = await db.query(
         `
         SELECT 
           q.id,
           q.title,
           q.description,
-          q.start_time as start_date,
-          q.end_time as end_date,
+          q.start_time,
+          q.end_time,
           q.duration,
-          MAX(r.score) as highest_score,
-          MIN(r.score) as lowest_score,
-          AVG(r.score) as average_score
+          (SELECT SUM(questions.score) FROM questions WHERE questions.quiz_id = q.id) as total_marks,
+          (SELECT MAX(qr.score) FROM quiz_results qr WHERE qr.quiz_id = q.id) as highest_score,
+          (SELECT MIN(qr.score) FROM quiz_results qr WHERE qr.quiz_id = q.id) as lowest_score,
+          (SELECT AVG(qr.score) FROM quiz_results qr WHERE qr.quiz_id = q.id) as average_score
         FROM quizzes q
-        LEFT JOIN quiz_results r ON q.id = r.quiz_id
         WHERE q.course_id = $1
         GROUP BY q.id, q.title, q.description, q.start_time, q.end_time, q.duration
         ORDER BY q.start_time ASC
       `,
         [courseid],
       );
+      console.log("API - Quiz stats before processing:", JSON.stringify(quizStats));
+
+      const processedQuizStats = quizStats.map((quiz) => {
+        // Calculate percentages based on total marks
+        const totalMarks = parseInt(quiz.total_marks) || 100; // Default to 100 if no total
+
+        // Make sure all scores are parsed as numbers
+        const highestScore = parseFloat(quiz.highest_score) || 0;
+        const lowestScore = parseFloat(quiz.lowest_score) || 0;
+        const averageScore = parseFloat(quiz.average_score) || 0;
+
+        console.log(`API - Processing quiz ${quiz.id}: Total marks=${totalMarks}, Highest=${highestScore}, Lowest=${lowestScore}, Avg=${averageScore}`);
+
+        return {
+          id: quiz.id,
+          title: quiz.title,
+          description: quiz.description,
+          start_time: quiz.start_time,
+          end_time: quiz.end_time,
+          duration: quiz.duration,
+          marks: totalMarks,
+          highest_score: highestScore,
+          lowest_score: lowestScore,
+          average_score: averageScore,
+          // Calculate percentages properly
+          highest_score_percent: Math.round((highestScore / totalMarks) * 100),
+          lowest_score_percent: Math.round((lowestScore / totalMarks) * 100),
+          average_score_percent: Math.round((averageScore / totalMarks) * 100)
+        };
+      });
+      console.log("API - Processed quiz stats:", JSON.stringify(processedQuizStats));
 
       return {
         course: course[0],
-        quizStats: quizStats.map((quiz) => ({
-          ...quiz,
-          start_date: new Date(quiz.start_date).toLocaleDateString(),
-          end_date: new Date(quiz.end_date).toLocaleDateString(),
-          average_score: Math.round(quiz.average_score || 0),
-        })),
+        quizStats: processedQuizStats,
       };
     }, 3600); // 1 hour TTL
 
@@ -76,6 +105,7 @@ export async function GET(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
+    console.log("API - Final response data:", JSON.stringify(courseData));
     return NextResponse.json(courseData);
   } catch (error) {
     console.error("Error fetching course:", error);
@@ -90,7 +120,7 @@ export async function PUT(
   { params }: { params: { courseid: string } },
 ) {
   try {
-    const cookieHeader = request.headers.get("cookie");
+    const cookieHeader = request.headers.get("cookie") || undefined;
     const session = await getSessionFromCookies(cookieHeader);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

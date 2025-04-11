@@ -323,153 +323,151 @@ export default function StaffCoursesPage() {
           </div>
         )
         : error
-        ? (
-          <div className="bg-red-50 text-red-600 p-4 rounded-lg flex items-center">
-            <AlertCircle className="h-6 w-6 mr-2" />
-            {error}
-          </div>
-        )
-        : courses.length === 0
-        ? (
-          <div className="bg-green-50 border border-green-100 p-8 rounded-lg text-center shadow-md">
-            <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600 mb-4">
-              <Book className="h-7 w-7" />
+          ? (
+            <div className="bg-red-50 text-red-600 p-4 rounded-lg flex items-center">
+              <AlertCircle className="h-6 w-6 mr-2" />
+              {error}
             </div>
-            <h3 className="text-xl font-semibold text-green-700 mb-2">
-              No courses yet
-            </h3>
-            <p className="text-gray-500 mb-4 max-w-md mx-auto">
-              Get started by creating your first course. Your students will be
-              able to join once it's created.
-            </p>
-            <Button
-              className="rounded-full bg-green-600 hover:bg-green-700 text-white shadow-md"
-              onClick={() => setIsAddDialogOpen(true)}
-            >
-              <Plus className="mr-2 h-5 w-5" /> Create Your First Course
-            </Button>
-          </div>
-        )
-        : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredCourses.map((course) => (
-              <Card
-                key={course.id}
-                className="overflow-hidden transition-all duration-200 hover:shadow-xl rounded-xl group border-none shadow-md"
-              >
-                {/* Modern card design with gradient background */}
-                <div
-                  className={`${
-                    getRandomGradient(course.id)
-                  } relative p-6 pb-4`}
-                >
-                  <div className="absolute right-4 top-4 opacity-80 group-hover:opacity-100 transition-opacity">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white"
-                        >
-                          <MoreHorizontal className="h-5 w-5 text-green-800" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
-                        <Link href={`/staff/courses/${course.id}`}>
-                          <DropdownMenuItem className="cursor-pointer">
-                            <Eye className="h-5 w-5 mr-2" /> View Details
-                          </DropdownMenuItem>
-                        </Link>
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={() => handleEditClick(course)}
-                        >
-                          <FileEdit className="h-5 w-5 mr-2" /> Edit Course
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="cursor-pointer text-red-600 focus:text-red-600"
-                          onClick={() => handleDeleteClick(course)}
-                        >
-                          <Trash2 className="h-5 w-5 mr-2" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  {/* Course info with better layout */}
-                  <div className="flex flex-col space-y-3">
-                    <div className="flex items-start">
-                      <div
-                        className={`h-12 w-12 flex items-center justify-center rounded-xl ${
-                          getRandomAccent(course.id)
-                        } text-white mr-3`}
-                      >
-                        <Book className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl font-bold text-green-800 mb-1 group-hover:text-green-700 transition-colors">
-                          {course.name}
-                        </CardTitle>
-                        <Badge
-                          variant="outline"
-                          className="border-green-200 text-green-700 font-medium bg-white/50 backdrop-blur-sm"
-                        >
-                          <Code className="h-3.5 w-3.5 mr-1" />
-                          {course.code}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
+          )
+          : courses.length === 0
+            ? (
+              <div className="bg-green-50 border border-green-100 p-8 rounded-lg text-center shadow-md">
+                <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600 mb-4">
+                  <Book className="h-7 w-7" />
                 </div>
-
-                <CardContent className="px-6 py-4">
-                  <CardDescription className="text-sm text-gray-600 min-h-[60px] line-clamp-3">
-                    {course.description || "No description available"}
-                  </CardDescription>
-
-                  {/* Stats row with modern styling */}
-                  <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="bg-green-100 p-1.5 rounded-full">
-                        <Users className="h-4 w-4 text-green-700" />
-                      </div>
-                      <span className="font-medium text-green-800">
-                        {course.student_count} students
-                      </span>
-                    </div>
-                    <div className="flex items-center text-xs text-gray-500">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      <span>
-                        {new Date(course.created_at).toLocaleDateString(
-                          "en-US",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          },
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-
-                <CardFooter className="bg-white px-6 py-4">
-                  <Link
-                    href={`/staff/courses/${course.id}`}
-                    className="w-full"
+                <h3 className="text-xl font-semibold text-green-700 mb-2">
+                  No courses yet
+                </h3>
+                <p className="text-gray-500 mb-4 max-w-md mx-auto">
+                  Get started by creating your first course. Your students will be
+                  able to join once it's created.
+                </p>
+                <Button
+                  className="rounded-full bg-green-600 hover:bg-green-700 text-white shadow-md"
+                  onClick={() => setIsAddDialogOpen(true)}
+                >
+                  <Plus className="mr-2 h-5 w-5" /> Create Your First Course
+                </Button>
+              </div>
+            )
+            : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredCourses.map((course) => (
+                  <Card
+                    key={course.id}
+                    className="overflow-hidden transition-all duration-200 hover:shadow-xl rounded-xl group border-none shadow-md"
                   >
-                    <Button
-                      variant="outline"
-                      className="rounded-lg border-green-200 hover:bg-green-50 hover:text-green-700 hover:border-green-300 text-green-600 w-full group-hover:bg-green-600 group-hover:text-white group-hover:border-green-600 transition-all"
+                    {/* Modern card design with gradient background */}
+                    <div
+                      className={`${getRandomGradient(course.id)
+                        } relative p-6 pb-4`}
                     >
-                      <Eye className="h-5 w-5 mr-2" /> View Course
-                    </Button>
-                  </Link>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        )}
+                      <div className="absolute right-4 top-4 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white"
+                            >
+                              <MoreHorizontal className="h-5 w-5 text-green-800" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <Link href={`/staff/courses/${course.id}`}>
+                              <DropdownMenuItem className="cursor-pointer">
+                                <Eye className="h-5 w-5 mr-2" /> View Details
+                              </DropdownMenuItem>
+                            </Link>
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => handleEditClick(course)}
+                            >
+                              <FileEdit className="h-5 w-5 mr-2" /> Edit Course
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="cursor-pointer text-red-600 focus:text-red-600"
+                              onClick={() => handleDeleteClick(course)}
+                            >
+                              <Trash2 className="h-5 w-5 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      {/* Course info with better layout */}
+                      <div className="flex flex-col space-y-3">
+                        <div className="flex items-start">
+                          <div
+                            className={`h-12 w-12 flex items-center justify-center rounded-xl ${getRandomAccent(course.id)
+                              } text-white mr-3`}
+                          >
+                            <Book className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-xl font-bold text-green-800 mb-1 group-hover:text-green-700 transition-colors">
+                              {course.name}
+                            </CardTitle>
+                            <Badge
+                              variant="outline"
+                              className="border-green-200 text-green-700 font-medium bg-white/50 backdrop-blur-sm"
+                            >
+                              <Code className="h-3.5 w-3.5 mr-1" />
+                              {course.code}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <CardContent className="px-6 py-4">
+                      <CardDescription className="text-sm text-gray-600 min-h-[60px] line-clamp-3">
+                        {course.description || "No description available"}
+                      </CardDescription>
+
+                      {/* Stats row with modern styling */}
+                      <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="bg-green-100 p-1.5 rounded-full">
+                            <Users className="h-4 w-4 text-green-700" />
+                          </div>
+                          <span className="font-medium text-green-800">
+                            {course.student_count} students
+                          </span>
+                        </div>
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          <span>
+                            {new Date(course.created_at).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              },
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+
+                    <CardFooter className="bg-white px-6 py-4">
+                      <Link
+                        href={`/staff/courses/${course.id}`}
+                        className="w-full"
+                      >
+                        <Button
+                          variant="outline"
+                          className="rounded-lg border-green-200 hover:bg-green-50 hover:text-green-700 hover:border-green-300 text-green-600 w-full group-hover:bg-green-600 group-hover:text-white group-hover:border-green-600 transition-all"
+                        >
+                          <Eye className="h-5 w-5 mr-2" /> View Course
+                        </Button>
+                      </Link>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
 
       {/* Add Course Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

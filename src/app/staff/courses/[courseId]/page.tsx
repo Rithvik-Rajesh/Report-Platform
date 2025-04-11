@@ -5,19 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
     Award,
-    BarChart3,
     Book,
     Calendar,
     CalendarClock,
     CheckCircle2,
-    Clock,
     Edit,
     Eye,
     FileQuestion,
     GraduationCap,
     Layers,
     Plus,
-    Star,
     Timer,
     TrendingUp,
     UserPlus,
@@ -54,6 +51,9 @@ interface Quiz {
     highest_score: number;
     lowest_score: number;
     average_score: number;
+    highest_score_percent: number;
+    lowest_score_percent: number;
+    average_score_percent: number;
 }
 
 interface Course {
@@ -90,6 +90,8 @@ export default function CourseDetailPage() {
         const fetchCourseData = async () => {
             try {
                 const courseId = window.location.pathname.split("/").pop();
+                console.log("Page - Fetching course data for ID:", courseId);
+
                 const response = await fetch(`/api/courses/${courseId}`, {
                     credentials: "include",
                 });
@@ -99,9 +101,26 @@ export default function CourseDetailPage() {
                 }
 
                 const data = await response.json();
+                console.log("Page - Received data from API:", data);
+
+                if (!data.course) {
+                    console.error("Page - No course data received");
+                    setError("Course data not found");
+                    return;
+                }
+
                 setCourse(data.course);
-                setQuizzes(data.quizStats);
+
+                // Handle potential missing or malformed quiz data
+                if (Array.isArray(data.quizStats)) {
+                    console.log("Page - Setting quiz stats:", data.quizStats);
+                    setQuizzes(data.quizStats);
+                } else {
+                    console.warn("Page - Quiz stats are not in expected format:", data.quizStats);
+                    setQuizzes([]);
+                }
             } catch (err) {
+                console.error("Page - Error fetching course data:", err);
                 setError(
                     err instanceof Error
                         ? err.message
@@ -117,110 +136,153 @@ export default function CourseDetailPage() {
 
     useEffect(() => {
         if (chartRef.current && quizzes.length > 0) {
-            const chartInstance = echarts.init(chartRef.current);
+            console.log("Page - Building chart with quizzes:", quizzes);
+            try {
+                const chartInstance = echarts.init(chartRef.current);
 
-            const dates = quizzes.map((quiz) =>
-                new Date(quiz.start_time).toLocaleDateString()
-            );
-            const scores = quizzes.map((quiz) => quiz.average_score);
+                // Ensure we have valid data for the chart
+                const quizTitles = quizzes.map((quiz) => quiz.title || `Quiz ${quiz.id}`);
+                const highestScores = quizzes.map((quiz) => Number(quiz.highest_score_percent) || 0);
+                const averageScores = quizzes.map((quiz) => Number(quiz.average_score_percent) || 0);
+                const lowestScores = quizzes.map((quiz) => Number(quiz.lowest_score_percent) || 0);
 
-            const option = {
-                animation: false,
-                tooltip: {
-                    trigger: "axis",
-                    formatter: "{b}: {c} marks",
-                    axisPointer: {
-                        type: "shadow",
-                    },
-                },
-                grid: {
-                    left: "3%",
-                    right: "4%",
-                    bottom: "3%",
-                    containLabel: true,
-                },
-                xAxis: {
-                    type: "category",
-                    data: dates,
-                    axisLabel: {
-                        color: "#64748b",
-                    },
-                    axisLine: {
-                        lineStyle: {
-                            color: "#e2e8f0",
+                console.log("Page - Chart data:", {
+                    titles: quizTitles,
+                    highest: highestScores,
+                    average: averageScores,
+                    lowest: lowestScores
+                });
+
+                const option = {
+                    animation: false,
+                    tooltip: {
+                        trigger: "axis",
+                        formatter: function (params: any[]) {
+                            // Find the quiz for this data point
+                            const quizTitle = params[0].axisValue;
+                            return `<strong>${quizTitle}</strong><br/>
+                                    <span style="color: #4ade80;">Highest: ${params[0].value}%</span><br/>
+                                    <span style="color: #3b82f6;">Average: ${params[1].value}%</span><br/>
+                                    <span style="color: #ef4444;">Lowest: ${params[2].value}%</span>`;
+                        },
+                        axisPointer: {
+                            type: "shadow",
                         },
                     },
-                },
-                yAxis: {
-                    type: "value",
-                    name: "Marks",
-                    nameTextStyle: {
-                        color: "#64748b",
+                    legend: {
+                        data: ['Highest Score', 'Average Score', 'Lowest Score'],
+                        bottom: 0
                     },
-                    axisLabel: {
-                        color: "#64748b",
+                    grid: {
+                        left: "3%",
+                        right: "4%",
+                        bottom: "10%",
+                        top: "6%",
+                        containLabel: true,
                     },
-                    axisLine: {
-                        lineStyle: {
-                            color: "#e2e8f0",
+                    xAxis: {
+                        type: "category",
+                        data: quizTitles,
+                        axisLabel: {
+                            color: "#64748b",
+                            rotate: 30,
+                            interval: 0
                         },
-                    },
-                    splitLine: {
-                        lineStyle: {
-                            color: "#e2e8f0",
-                        },
-                    },
-                },
-                series: [
-                    {
-                        name: "Performance",
-                        type: "line",
-                        data: scores,
-                        smooth: true,
-                        symbol: "circle",
-                        symbolSize: 8,
-                        itemStyle: {
-                            color: "#3b82f6",
-                        },
-                        lineStyle: {
-                            width: 3,
-                            color: "#3b82f6",
-                        },
-                        areaStyle: {
-                            color: {
-                                type: "linear",
-                                x: 0,
-                                y: 0,
-                                x2: 0,
-                                y2: 1,
-                                colorStops: [
-                                    {
-                                        offset: 0,
-                                        color: "rgba(59, 130, 246, 0.5)",
-                                    },
-                                    {
-                                        offset: 1,
-                                        color: "rgba(59, 130, 246, 0.05)",
-                                    },
-                                ],
+                        axisLine: {
+                            lineStyle: {
+                                color: "#e2e8f0",
                             },
                         },
                     },
-                ],
-            };
+                    yAxis: {
+                        type: "value",
+                        name: "Score (%)",
+                        min: 0,
+                        max: 100,
+                        nameTextStyle: {
+                            color: "#64748b",
+                        },
+                        axisLabel: {
+                            color: "#64748b",
+                            formatter: '{value}%'
+                        },
+                        axisLine: {
+                            lineStyle: {
+                                color: "#e2e8f0",
+                            },
+                        },
+                        splitLine: {
+                            lineStyle: {
+                                color: "#e2e8f0",
+                            },
+                        },
+                    },
+                    series: [
+                        {
+                            name: "Highest Score",
+                            type: "line",
+                            data: highestScores,
+                            smooth: true,
+                            symbol: "circle",
+                            symbolSize: 8,
+                            itemStyle: {
+                                color: "#4ade80", // Green color for highest score
+                            },
+                            lineStyle: {
+                                width: 3,
+                                color: "#4ade80",
+                            },
+                        },
+                        {
+                            name: "Average Score",
+                            type: "line",
+                            data: averageScores,
+                            smooth: true,
+                            symbol: "circle",
+                            symbolSize: 8,
+                            itemStyle: {
+                                color: "#3b82f6", // Blue color for average score
+                            },
+                            lineStyle: {
+                                width: 3,
+                                color: "#3b82f6",
+                            },
+                        },
+                        {
+                            name: "Lowest Score",
+                            type: "line",
+                            data: lowestScores,
+                            smooth: true,
+                            symbol: "circle",
+                            symbolSize: 8,
+                            itemStyle: {
+                                color: "#ef4444", // Red color for lowest score
+                            },
+                            lineStyle: {
+                                width: 3,
+                                color: "#ef4444",
+                            },
+                        }
+                    ],
+                };
 
-            chartInstance.setOption(option);
+                chartInstance.setOption(option);
 
-            const handleResize = () => {
-                chartInstance.resize();
-            };
+                const handleResize = () => {
+                    chartInstance.resize();
+                };
 
-            window.addEventListener("resize", handleResize);
+                window.addEventListener("resize", handleResize);
 
-            return () => {
-                window.removeEventListener("resize", handleResize);
-                chartInstance.dispose();
-            };
+                return () => {
+                    window.removeEventListener("resize", handleResize);
+                    chartInstance.dispose();
+                };
+            } catch (err) {
+                console.error("Page - Error rendering chart:", err);
+            }
+        } else {
+            console.log("Page - Not rendering chart, quizzes:", quizzes.length);
         }
     }, [quizzes]);
 
@@ -279,6 +341,10 @@ export default function CourseDetailPage() {
 
     const handleViewTopic = () => {
         router.push(`/staff/courses/${course?.id}/topics`);
+    };
+
+    const handleViewType = () => {
+        router.push(`/staff/courses/${course?.id}/types`);
     };
 
     if (isLoading) {
@@ -443,7 +509,9 @@ export default function CourseDetailPage() {
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button className="py-6 text-lg font-medium bg-green-600 text-white hover:bg-green-700 rounded-xl shadow-md transition-all duration-200">
+                                <Button
+                                    onClick={() => handleViewType()}
+                                    className="py-6 text-lg font-medium bg-green-600 text-white hover:bg-green-700 rounded-xl shadow-md transition-all duration-200">
                                     <Layers className="mr-2 h-5 w-5" /> Types
                                 </Button>
                             </TooltipTrigger>
@@ -653,7 +721,7 @@ export default function CourseDetailPage() {
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <Badge className="bg-green-100 text-green-800 hover:bg-green-200 px-3 py-1 text-sm rounded-full">
-                                                            Upcoming
+                                                            Completed
                                                         </Badge>
                                                     </TooltipTrigger>
                                                     <TooltipContent>
